@@ -1,13 +1,7 @@
 <!--
 이 파일이 곧 슬라이드입니다. 저장하면 브라우저에 실시간 반영됩니다.
 슬라이드는 --- 로 구분하고, 각 슬라이드 첫 줄에 @type을 지정합니다.
-
-이미지 슬라이드 예시 (이미지 파일을 이 폴더나 assets/에 넣고):
-@typeImage
-
-캡션 텍스트
-
-![[이미지.png]]
+이미지는 이 폴더(grumpy-cat.jpg)나 assets/(smudge-cat.jpg)에 넣고 ![[파일명]]으로 부릅니다.
 -->
 
 @typeTitle
@@ -30,6 +24,22 @@ PPT 협 AI Native
 - md를 저장하면 브라우저에 **실시간 반영**
 - ==형광펜==, **볼드**, 표, mermaid, 코드 셀 지원
 - PDF 저장 버튼 하나로 벡터 PDF 출력
+
+---
+
+@typeImage
+
+이미지는 발표 폴더에 넣으면 끝 (이 사진은 sample/grumpy-cat.jpg)
+
+![[grumpy-cat.jpg]]
+
+---
+
+@typeImage
+
+폴더 안 assets/에 넣어도 됩니다 (이 사진은 sample/assets/smudge-cat.jpg)
+
+![[smudge-cat.jpg]]
 
 ---
 
