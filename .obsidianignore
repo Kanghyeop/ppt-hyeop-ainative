@@ -2,15 +2,7 @@
 .obsidianignore
 .git/
 .omc/
-node_modules/
-package.json
-package-lock.json
-.server.pid
-server.js
+app/
+CLAUDE.md
 start.bat
-stop.bat
-template.html
-scripts/
 note/
-SKILL.md
-prompt_log.txt

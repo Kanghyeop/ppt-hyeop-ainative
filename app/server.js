@@ -6,7 +6,8 @@ const crypto = require('crypto');
 const puppeteer = require('puppeteer-core');
 
 const PORT = 7744;
-const ROOT = __dirname;
+// 엔진은 app/ 안에 살고, 덱 폴더들은 그 상위(소프트웨어 루트)에 산다
+const ROOT = path.resolve(__dirname, '..');
 
 // 시스템 Chrome/Edge 자동 탐색 (Windows)
 function findBrowserExecutable() {
@@ -56,16 +57,16 @@ function broadcastSse(deckPath, payload) {
 }
 
 // PID 파일
-const PID_FILE = path.join(ROOT, '.server.pid');
+const PID_FILE = path.join(__dirname, '.server.pid');
 fs.writeFileSync(PID_FILE, String(process.pid));
 process.on('exit', () => { try { fs.unlinkSync(PID_FILE); } catch {} });
 
 // HTML 템플릿
-const TEMPLATE_PATH = path.join(ROOT, 'template.html');
+const TEMPLATE_PATH = path.join(__dirname, 'template.html');
 let TEMPLATE = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
 
 // style.md 파싱 → CSS 변수
-const STYLE_PATH = path.join(ROOT, 'style.md');
+const STYLE_PATH = path.join(__dirname, 'style.md');
 let STYLE_CSS = '';
 
 function parseStyleMd() {
@@ -136,7 +137,7 @@ const clients = {};
 // 중첩 deck 지원: 어느 depth 에 있든 비-예외 디렉터리는 deck 후보
 // 디렉터리 자체가 deck = {dir}/{basename}.md 소유 (initFolder 가 없으면 생성)
 const EXCLUDED_ANY = new Set(['assets', 'node_modules', 'lib', 'memory']);
-const EXCLUDED_ROOT = new Set(['note', 'scripts']);
+const EXCLUDED_ROOT = new Set(['note', 'app']);
 
 function getContentFolders() {
   const result = [];

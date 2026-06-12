@@ -2,8 +2,8 @@
 // 각 덱(md)이 참조하는 이미지를 해당 덱의 assets/로 모으고, 어디서도 참조되지 않는 이미지를 보고한다.
 //
 // 사용법:
-//   node scripts/organize.js          # 드라이런: 이동 계획 + 미참조 이미지 보고만
-//   node scripts/organize.js --apply  # 참조 이미지를 실제로 각 덱 assets/로 이동
+//   node app/organize.js          # 드라이런: 이동 계획 + 미참조 이미지 보고만
+//   node app/organize.js --apply  # 참조 이미지를 실제로 각 덱 assets/로 이동
 //
 // 미참조 이미지는 --apply 에서도 건드리지 않는다 (사용자에게 물어보고 처리할 것).
 const fs = require('fs');
@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, '..');
 const APPLY = process.argv.includes('--apply');
 const IMG_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']);
 const EXCLUDED_ANY = new Set(['assets', 'node_modules', 'lib', 'memory']);
-const EXCLUDED_ROOT = new Set(['note', 'scripts']);
+const EXCLUDED_ROOT = new Set(['note', 'app']);
 
 // 덱 폴더 수집 (server.js 와 동일 규칙)
 function getDecks() {
