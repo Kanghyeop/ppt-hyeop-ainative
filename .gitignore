@@ -1,0 +1,9 @@
+node_modules/
+.server.pid
+.omc/
+note/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+*.log
+.DS_Store
+Thumbs.db

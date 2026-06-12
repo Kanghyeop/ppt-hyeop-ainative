@@ -1,0 +1,19 @@
+{
+  "name": "ppt-hyeop-ainative",
+  "version": "1.0.0",
+  "description": "PPT 협 AI Native - 마크다운으로 쓰면 흰 배경 + Pretendard 강의 슬라이드로 렌더링하고, 서버사이드 Puppeteer로 벡터 PDF를 뽑아주는 도구",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "organize": "node scripts/organize.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kanghyeop/ppt-hyeop-ainative.git"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer-core": "^24.42.0"
+  }
+}
