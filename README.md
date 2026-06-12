@@ -4,6 +4,17 @@
 
 파워포인트 없이, **폴더 하나 = 발표 하나 = 글 파일 하나.** 글을 고치면 슬라이드에 바로 반영됩니다.
 
+## 샘플 갤러리
+
+`sample/` 예제 덱이 PDF로 나온 모습입니다. (전체는 `sample/sample.pdf`)
+
+<p>
+<img src="docs/preview/title.png" width="400"> <img src="docs/preview/list.png" width="400">
+</p>
+<p>
+<img src="docs/preview/image-cat.png" width="400"> <img src="docs/preview/table.png" width="400">
+</p>
+
 ## 시작하기
 
 **Claude Code에 이 페이지 주소를 주면서 "나 이 소프트웨어 쓰고 싶어"라고 하세요.** 설치부터 실행까지 알아서 해줍니다.
