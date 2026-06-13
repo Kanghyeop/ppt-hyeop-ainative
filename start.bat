@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 
-rem 내부 파일은 탐색기에서 숨김 - 사용자에게는 start.bat / README / 발표 폴더만 보이게
+rem Hide internal files - users only see start.bat / README / deck folders
 attrib +h app >nul 2>&1
 attrib +h CLAUDE.md >nul 2>&1
 attrib +h .git >nul 2>&1
@@ -15,7 +15,7 @@ if not exist node_modules (
   call npm install --no-fund --no-audit
 )
 
-rem 기존 서버 종료 - PID 파일이 비어있거나 어긋나도 7744 포트 점유 프로세스를 직접 정리
+rem Stop old server - kill whatever holds port 7744 even if .server.pid is stale
 if exist .server.pid (
   for /f %%i in (.server.pid) do taskkill /PID %%i /F >nul 2>&1
   del .server.pid >nul 2>&1
