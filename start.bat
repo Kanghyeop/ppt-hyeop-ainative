@@ -15,10 +15,12 @@ if not exist node_modules (
   call npm install --no-fund --no-audit
 )
 
+rem 기존 서버 종료 - PID 파일이 비어있거나 어긋나도 7744 포트 점유 프로세스를 직접 정리
 if exist .server.pid (
   for /f %%i in (.server.pid) do taskkill /PID %%i /F >nul 2>&1
   del .server.pid >nul 2>&1
 )
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":7744 .*LISTENING"') do taskkill /PID %%p /F >nul 2>&1
 
 start "ppt-hyeop-ainative" cmd /k node server.js
 
