@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>슬라이드</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" href="/style.css" />
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'loose',
+    fontFamily: 'Pretendard, sans-serif',
+    flowchart: { htmlLabels: false, useMaxWidth: false },
+    class: { htmlLabels: false, useMaxWidth: false },
+    state: { htmlLabels: false, useMaxWidth: false },
+  });
+  window.__mermaid = mermaid;
+  window.renderMermaid = async () => {
+    const nodes = document.querySelectorAll('.mermaid-block[data-mermaid-pending="1"]');
+    let idx = 0;
+    for (const el of nodes) {
+      idx++;
+      const code = el.getAttribute('data-src') || '';
+      const id = 'mmd-' + Math.random().toString(36).slice(2);
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('mermaid render timeout (5s) at block #' + idx)), 5000));
+      try {
+        const { svg } = await Promise.race([mermaid.render(id, code), timeout]);
+        el.innerHTML = svg;
+        const svgEl = el.querySelector('svg');
+        if (svgEl) {
+          svgEl.removeAttribute('width');
+          svgEl.removeAttribute('height');
+          svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+          svgEl.style.maxWidth = 'none';
+          svgEl.style.maxHeight = 'none';
+          svgEl.style.width = '100%';
+          svgEl.style.height = '100%';
+        }
+      } catch (e) {
+        console.error('[mermaid #' + idx + ']', e, code);
+        el.innerHTML = '<pre style="color:#c00;white-space:pre-wrap;font-size:16px;">#' + idx + ' ' + String(e.message || e) + '\n\n' + code.replace(/</g,'&lt;') + '</pre>';
+      }
+      el.removeAttribute('data-mermaid-pending');
+    }
+  };
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* 슬라이드 공통 (베이스 - variant보다 먼저 선언해서 variant가 오버라이드 가능하게) */
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: calc(var(--slide-w) * 1px);
+    height: calc(var(--slide-h) * 1px);
+    background: var(--slide-bg, #fff);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: var(--slide-padding, 80px 100px);
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  }
+
+  .slide.active {
+    display: flex;
+  }
+
+  .slide-table {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    padding: var(--body-padding, 80px 120px);
+  }
+  .slide-table .body-heading {
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .slide-table .table-block {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .slide-table .table-block table {
+    width: auto;
+    border-collapse: collapse;
+  }
+  .slide-table .table-block th,
+  .slide-table .table-block td {
+    border: 1px solid var(--table-border-color, #222);
+    padding: var(--table-padding, 10px 16px);
+    font-size: var(--table-td-size, 26px);
+    color: var(--table-td-color, #222);
+    text-align: left;
+  }
+  .slide-table .table-block th {
+    font-weight: 700;
+    font-size: var(--table-th-size, 28px);
+    color: var(--table-th-color, #111);
+  }
+
+  .slide-mermaid {
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+  }
+  .slide-mermaid .body-heading {
+    padding: 40px 60px 0;
+    flex-shrink: 0;
+  }
+  .mermaid-block {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    padding: 0 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mermaid-block svg {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* 코드 블록 (prompt, bash, python, markdown 등) */
+  .code-block {
+    position: relative;
+    background: var(--code-bg, #f6f8fa);
+    border: 1px solid var(--code-border, #e1e4e8);
+    border-radius: 8px;
+    padding: 24px 28px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', 'Monaco', 'D2Coding', monospace;
+    font-size: var(--code-size, 22px);
+    color: var(--code-color, #24292e);
+    line-height: 1.55;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 16px 0;
+    max-width: 100%;
+    text-align: left;
+  }
+  .code-block code {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    padding: 0;
+    display: block;
+  }
+  .code-block .code-lang {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-size: 14px;
+    color: #888;
+    font-family: 'Pretendard', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: lowercase;
+  }
+
+  /* @typeCode 슬라이드 전용 */
+  .slide-code {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    padding: var(--body-padding, 80px 120px);
+  }
+  .slide-code .body-heading {
+    flex-shrink: 0;
+    text-align: center;
+    width: 100%;
+  }
+  .slide-code .code-block-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slide-code .code-block-wrap .code-block {
+    font-size: var(--code-size, 28px);
+    width: 100%;
+    max-height: 100%;
+    margin: 0;
+    overflow: auto;
+  }
+
+  :root {
+    --slide-w: 1365;
+    --slide-h: 1024;
+  }
+
+  body {
+    background: #fff;
+    font-family: 'Pretendard', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  /* 컨트롤 */
+  .controls {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    z-index: 200;
+    background: rgba(255,255,255,0.95);
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .controls button {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    transition: background 0.15s;
+  }
+  .controls button:hover { background: #eee; }
+
+  .controls .page-info {
+    font-size: 14px;
+    color: #666;
+    min-width: 70px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* 슬라이드 뷰포트 */
+  #slide-viewport {
+    position: relative;
+    width: calc(var(--slide-w) * 1px);
+    height: calc(var(--slide-h) * 1px);
+    transform: scale(var(--viewport-scale, 0.6));
+    transform-origin: center center;
+  }
+
+  .slide-page-number {
+    position: absolute;
+    left: 40px;
+    bottom: 24px;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--page-number-color, #bbb);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* 제목 슬라이드: # */
+  .slide-title {
+    text-align: center;
+    background: var(--title-bg, #000);
+  }
+
+  .slide-title .title-text {
+    font-weight: var(--title-weight, 900);
+    font-size: var(--title-size, 88px);
+    color: var(--title-color, #fff);
+    line-height: var(--title-lh, 1.2);
+    letter-spacing: var(--title-ls, -4px);
+  }
+
+  .slide-title .subtitle-text {
+    font-weight: 400;
+    font-size: var(--title-subtitle-size, 36px);
+    color: var(--title-subtitle-color, rgba(255,255,255,0.6));
+    line-height: 1.4;
+    margin-top: 28px;
+    letter-spacing: -1px;
+  }
+
+  /* 섹션 슬라이드: ## */
+  .slide-section {
+    text-align: center;
+    background: var(--section-bg, #fff);
+  }
+
+  .slide-section .section-text {
+    font-weight: var(--section-weight, 900);
+    font-size: var(--section-size, 88px);
+    color: var(--section-color, #111);
+    line-height: var(--section-lh, 1.2);
+    letter-spacing: var(--section-ls, -4px);
+  }
+
+  .slide-section .section-body {
+    margin-top: 36px;
+  }
+
+  .slide-section .section-body p {
+    font-weight: 400;
+    font-size: var(--section-body-size, 32px);
+    color: var(--section-body-color, #555);
+    line-height: 1.5;
+    letter-spacing: -0.5px;
+  }
+
+  /* 본문 슬라이드 */
+  .slide-body {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    padding: var(--body-padding, 80px 120px);
+  }
+
+  .body-heading {
+    font-weight: var(--heading-weight, 700);
+    font-size: var(--heading-size, 48px);
+    color: var(--heading-color, #222);
+    line-height: var(--heading-lh, 1.25);
+    letter-spacing: var(--heading-ls, -2px);
+    margin-bottom: var(--heading-mb, 40px);
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .slide-body .body-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .slide-body .body-content p {
+    font-weight: var(--body-weight, 400);
+    font-size: var(--body-size, 36px);
+    color: var(--body-color, #333);
+    line-height: var(--body-lh, 1.55);
+    letter-spacing: var(--body-ls, -1px);
+  }
+
+  .slide-body .body-content strong {
+    font-weight: var(--body-bold-weight, 700);
+    color: var(--body-bold-color, #111);
+  }
+
+  .slide-body .body-content .spacer {
+    height: var(--spacer-h, 1.2em);
+  }
+
+  /* 리스트 슬라이드 */
+  .slide-list {
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    padding: var(--body-padding, 80px 120px);
+  }
+
+  .slide-list ul li.list-heading-item {
+    font-weight: var(--heading-weight, 700);
+    font-size: var(--heading-size, 48px);
+    color: var(--heading-color, #222);
+    line-height: var(--heading-lh, 1.25);
+    letter-spacing: var(--heading-ls, -2px);
+    padding-bottom: var(--heading-mb, 40px);
+    padding-left: 0;
+  }
+
+  .slide-list ul li.list-heading-item::before {
+    display: none;
+  }
+
+  .slide-list ul li.list-body-item {
+    padding-left: 0;
+  }
+
+  .slide-list ul li.list-body-item::before {
+    display: none;
+  }
+
+  .slide-list ul {
+    list-style: none;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: left;
+    flex: 1;
+  }
+
+  .slide-list ul li {
+    font-weight: var(--list-weight, 400);
+    font-size: var(--list-size, 34px);
+    color: var(--list-color, #333);
+    line-height: var(--list-lh, 1.5);
+    letter-spacing: var(--list-ls, -0.5px);
+    padding: var(--list-padding, 10px 0);
+    padding-left: var(--list-indent, 32px);
+    position: relative;
+  }
+
+  .slide-list ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22px;
+    width: var(--list-bullet-size, 10px);
+    height: var(--list-bullet-size, 10px);
+    border-radius: 50%;
+    background: var(--list-bullet-color, #999);
+  }
+
+  .slide-list ul li strong {
+    font-weight: var(--body-bold-weight, 700);
+    color: var(--body-bold-color, #111);
+  }
+
+  /* 이미지 슬라이드 */
+  .slide-image {
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+  }
+
+  .slide-image .image-caption {
+    font-weight: 500;
+    font-size: var(--image-caption-size, 24px);
+    color: var(--image-caption-color, #666);
+    margin-top: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .slide-image .body-heading {
+    padding: 40px 60px 0;
+    flex-shrink: 0;
+  }
+
+  .slide-image .image-caption {
+    padding: 0 60px;
+  }
+
+  .slide-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    object-fit: contain;
+  }
+
+  /* 테이블 (body/list 내부 인라인 테이블) */
+  .slide-body table, .slide-list table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 16px 0;
+  }
+
+  .slide-body table th, .slide-list table th,
+  .slide-body table td, .slide-list table td {
+    border: 1px solid var(--table-border-color, #222);
+    padding: var(--table-padding, 10px 16px);
+    font-size: var(--table-td-size, 24px);
+    color: var(--table-td-color, #222);
+    text-align: left;
+  }
+
+  .slide-body table th, .slide-list table th {
+    font-weight: 700;
+    font-size: var(--table-th-size, 24px);
+    color: var(--table-th-color, #111);
+  }
+
+  /* 네비게이션 영역 (투명 클릭존) */
+  .nav-left, .nav-right {
+    position: fixed;
+    top: 0;
+    width: 15%;
+    height: 100%;
+    z-index: 100;
+    cursor: pointer;
+  }
+  .nav-left { left: 0; }
+  .nav-right { right: 0; }
+
+  /* 전체화면 모드 */
+  body.fullscreen-mode {
+    background: #fff;
+  }
+  body.fullscreen-mode .controls {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  body.fullscreen-mode:hover .controls {
+    opacity: 1;
+  }
+
+  /* 썸네일 바 */
+  #thumbnails {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: rgba(255,255,255,0.95);
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    overflow-x: auto;
+    align-items: center;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+    z-index: 200;
+  }
+
+  .thumb {
+    min-width: 85px;
+    height: 64px;
+    background: #f5f5f5;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #999;
+    transition: border-color 0.15s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 4px;
+  }
+
+  .thumb.active {
+    border-color: #333;
+  }
+
+  .thumb:hover {
+    border-color: #888;
+  }
+
+  .thumb-title {
+    background: #222;
+    color: #fff;
+  }
+
+
+  body.fullscreen-mode #thumbnails {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  body.fullscreen-mode:hover #thumbnails {
+    opacity: 1;
+  }
+
+  /* 서버사이드 Puppeteer page.pdf() 용 인쇄 전용 레이아웃 */
+  /* 스크린 CSS 는 건드리지 않고 @media print 에서만 슬라이드를 순차 flow 로 전환 */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { size: 1365px 1024px; margin: 0; }
+    html, body { background: #fff; margin: 0; padding: 0; display: block !important; height: auto !important; overflow: visible !important; }
+    .controls, .toolbar, .nav-left, .nav-right, #thumbnails, button { display: none !important; }
+    #slide-viewport {
+      transform: none !important;
+      width: auto !important;
+      height: auto !important;
+      position: static !important;
+      inset: auto !important;
+      overflow: visible !important;
+    }
+    .slide {
+      display: flex !important;
+      position: relative !important;
+      page-break-after: always;
+      break-after: page;
+      width: 1365px !important;
+      height: 1024px !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    .slide:last-child {
+      page-break-after: auto;
+      break-after: auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button id="prevBtn">&larr;</button>
+  <span class="page-info" id="pageInfo">1 / 1</span>
+  <button id="nextBtn">&rarr;</button>
+  <button id="savePdfBtn2" title="서버사이드 Puppeteer 벡터 PDF (기본)">PDF 저장</button>
+  <button id="fullscreenBtn">F 전체화면</button>
+</div>
+
+<div class="nav-left" id="navLeft"></div>
+<div class="nav-right" id="navRight"></div>
+
+<div id="slide-viewport"></div>
+<div id="thumbnails"></div>
+
+<script>
+  const cs = getComputedStyle(document.documentElement);
+  const SLIDE_W = parseInt(cs.getPropertyValue('--slide-w')) || 1365;
+  const SLIDE_H = parseInt(cs.getPropertyValue('--slide-h')) || 1024;
+
+  let currentSlide = parseInt(location.hash.replace('#', '')) - 1 || 0;
+  let totalSlides = 0;
+  let slidesData = [];
+
+  // 뷰포트 스케일 계산
+  function updateScale() {
+    const maxW = window.innerWidth * 0.85;
+    const maxH = (window.innerHeight - 120) * 0.85;
+    const scale = Math.min(maxW / SLIDE_W, maxH / SLIDE_H);
+    document.documentElement.style.setProperty('--viewport-scale', scale);
+  }
+  updateScale();
+  window.addEventListener('resize', updateScale);
+
+  // 마크다운 파싱 → 슬라이드 배열
+  function parseMarkdown(text) {
+    let raw = text.trim();
+    if (!raw) return [];
+
+    // HTML 주석 제거 (타입 목록 주석 등)
+    raw = raw.replace(/<!--[\s\S]*?-->/g, '').trim();
+    // 앞뒤 불필요한 --- 제거
+    raw = raw.replace(/^---\n/, '').replace(/\n---$/, '').trim();
+    if (!raw) return [];
+
+    // --- 로 슬라이드 분리
+    const sections = raw.split(/\n---\n/).map(s => s.trim()).filter(Boolean);
+    const slides = [];
+
+    for (const section of sections) {
+      const lines = section.split('\n');
+      let heading = '';
+      let subHeading = '';
+      const bodyLines = [];
+      const listItems = [];
+      const images = [];
+      const mermaids = [];
+      const codeBlocks = [];
+      let hasTable = false;
+      const tableRows = [];
+      let inTable = false;
+      let customType = '';
+
+      // 앞쪽 빈 줄 스킵 후 @type 마커 감지
+      while (lines.length && lines[0].trim() === '') lines.shift();
+      const firstLine = lines[0]?.trim();
+      if (firstLine && /^@(\w+)$/.test(firstLine)) {
+        customType = firstLine.match(/^@(\w+)$/)[1];
+        lines.shift();
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // mermaid 코드블록
+        if (/^```mermaid\s*$/.test(trimmed)) {
+          const buf = [];
+          i++;
+          while (i < lines.length && !/^```\s*$/.test(lines[i].trim())) {
+            buf.push(lines[i]);
+            i++;
+          }
+          mermaids.push(buf.join('\n'));
+          continue;
+        }
+
+        // 일반 코드블록 (prompt, bash, python, markdown 등)
+        const fenceMatch = trimmed.match(/^```(\w*)\s*$/);
+        if (fenceMatch) {
+          const lang = fenceMatch[1] || '';
+          const buf = [];
+          i++;
+          while (i < lines.length && !/^```\s*$/.test(lines[i].trim())) {
+            buf.push(lines[i]);
+            i++;
+          }
+          codeBlocks.push({ lang, code: buf.join('\n') });
+          continue;
+        }
+
+        // 테이블 감지
+        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          // 구분선 행 스킵
+          if (/^\|[\s\-:|]+\|$/.test(trimmed)) { inTable = true; continue; }
+          const nextTrimmed = (lines[i + 1] || '').trim();
+          const nextIsSep = /^\|[\s\-:|]+\|$/.test(nextTrimmed);
+          if (inTable || tableRows.length > 0 || nextIsSep) {
+            hasTable = true;
+            inTable = true;
+            const cells = trimmed.split('|').slice(1, -1).map(c => c.trim());
+            tableRows.push(cells);
+            continue;
+          }
+        } else {
+          inTable = false;
+        }
+
+        // 이미지: 표준 마크다운 ![alt](src) 또는 옵시디언 ![[file]]
+        const imgMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) {
+          images.push({ alt: imgMatch[1], src: imgMatch[2] });
+          continue;
+        }
+        const obsImgMatch = trimmed.match(/^!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]$/);
+        if (obsImgMatch) {
+          images.push({ alt: '', src: encodeURIComponent(obsImgMatch[1]) });
+          continue;
+        }
+
+        // 제목
+        if (trimmed.startsWith('# ') && !trimmed.startsWith('## ')) {
+          heading = trimmed.replace(/^#\s+/, '').replace(/\\/g, '<br>');
+          continue;
+        }
+
+        if (trimmed.startsWith('## ')) {
+          subHeading = trimmed.replace(/^##\s+/, '').replace(/\\/g, '<br>');
+          continue;
+        }
+
+        // 리스트 (- 또는 1. 2. 등 번호)
+        if (trimmed.startsWith('- ')) {
+          listItems.push(trimmed.replace(/^-\s+/, ''));
+          continue;
+        }
+        if (/^\d+\.\s+/.test(trimmed)) {
+          listItems.push(trimmed.replace(/^\d+\.\s+/, ''));
+          continue;
+        }
+
+        // 빈 줄
+        if (trimmed === '') {
+          if (bodyLines.length > 0) bodyLines.push('__BLANK__');
+          continue;
+        }
+
+        // 일반 텍스트
+        bodyLines.push(trimmed);
+      }
+
+      // 끝의 BLANK 제거
+      while (bodyLines.length && bodyLines[bodyLines.length - 1] === '__BLANK__') bodyLines.pop();
+
+      // 커스텀 타입 → 구조 타입 매핑
+      const TYPE_MAP = { typeTitle: 'title', typeHead: 'section', typeList: 'list', typeImage: 'image', typeMermaid: 'mermaid', typeTable: 'table', typeCode: 'code' };
+
+      // 슬라이드 타입 결정
+      let type = 'body';
+      if (customType && TYPE_MAP[customType]) {
+        type = TYPE_MAP[customType];
+        // @typea: # 없이 일반 텍스트만 있으면 heading으로 승격
+        if (type === 'title' && !heading && bodyLines.length) {
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeb: ## 없이 일반 텍스트만 있으면 section으로 승격
+        if (type === 'section' && !subHeading && !heading && bodyLines.length) {
+          subHeading = bodyLines.map(l => l === '__BLANK__' ? '<span style="display:block;height:0.5em;"></span>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeList: # 없이 텍스트가 있으면 heading으로 승격
+        if (type === 'list' && !heading && !subHeading && bodyLines.length) {
+          while (bodyLines.length && bodyLines[bodyLines.length - 1] === '__BLANK__') bodyLines.pop();
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeImage: # 없이 텍스트가 있으면 heading으로 승격
+        if (type === 'image' && !heading && bodyLines.length) {
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeMermaid: # 없이 텍스트가 있으면 heading으로 승격
+        if (type === 'mermaid' && !heading && bodyLines.length) {
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeTable: # 없이 텍스트가 있으면 heading으로 승격
+        if (type === 'table' && !heading && bodyLines.length) {
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+        // @typeCode: # 없이 텍스트가 있으면 heading으로 승격
+        if (type === 'code' && !heading && bodyLines.length) {
+          heading = bodyLines.map(l => l === '__BLANK__' ? '<br>' : l).join('<br>');
+          bodyLines.length = 0;
+        }
+      } else if (heading && !listItems.length && !bodyLines.length && !images.length && !hasTable) {
+        type = 'title';
+      } else if (subHeading && !listItems.length && !bodyLines.length && !images.length && !hasTable) {
+        type = 'section';
+      } else if (codeBlocks.length && !listItems.length && !images.length && !mermaids.length && !hasTable) {
+        type = 'code';
+      } else if (mermaids.length && !listItems.length && !images.length) {
+        type = 'mermaid';
+      } else if (images.length && !bodyLines.length && !listItems.length) {
+        type = 'image';
+      } else if (listItems.length) {
+        type = 'list';
+      }
+
+      slides.push({ type, customType, heading, subHeading, bodyLines, listItems, images, mermaids, codeBlocks, hasTable, tableRows });
+    }
+
+    return slides;
+  }
+
+  // 인라인 마크다운 처리
+  function inlineMd(text) {
+    const imgStyle = 'max-width:var(--table-img-max-w,360px);max-height:var(--table-img-max-h,320px);display:block;margin:0 auto;';
+    return text
+      .replace(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g, (_, f) => `<img src="${encodeURIComponent(f)}" alt="" style="${imgStyle}">`)
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => `<img src="${src}" alt="${alt}" style="${imgStyle}">`)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/==(.+?)==/g, '<mark style="background:#fff3a3;padding:2px 4px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;">$1</mark>')
+      .replace(/`(.+?)`/g, '<code style="background:#f0f0f0;padding:2px 6px;border-radius:3px;font-size:0.9em;">$1</code>');
+  }
+
+  // 테이블 HTML
+  function buildTable(rows) {
+    if (!rows.length) return '';
+    let html = '<table>';
+    html += '<thead><tr>' + rows[0].map(c => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead>';
+    html += '<tbody>';
+    for (let i = 1; i < rows.length; i++) {
+      html += '<tr>' + rows[i].map(c => `<td>${inlineMd(c)}</td>`).join('') + '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // 코드 블록 HTML (mermaid 외 모든 코드 펜스)
+  function buildCode(blocks) {
+    if (!blocks || !blocks.length) return '';
+    return blocks.map(b => {
+      const escaped = b.code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      const langTag = b.lang ? `<span class="code-lang">${b.lang}</span>` : '';
+      return `<pre class="code-block">${langTag}<code>${escaped}</code></pre>`;
+    }).join('');
+  }
+
+  // 슬라이드 렌더링
+  function renderSlides(data) {
+    const container = document.getElementById('slide-viewport');
+    const thumbContainer = document.getElementById('thumbnails');
+    container.innerHTML = '';
+    thumbContainer.innerHTML = '';
+    slidesData = [];
+
+    for (const { file, content } of data) {
+      const parsed = parseMarkdown(content);
+
+      for (let i = 0; i < parsed.length; i++) {
+        const s = parsed[i];
+        const slide = document.createElement('div');
+        const CT_FALLBACK = { title: 'typeTitle', section: 'typeHead', list: 'typeList', image: 'typeImage', mermaid: 'typeMermaid', table: 'typeTable', code: 'typeCode' };
+        const ct = s.customType || CT_FALLBACK[s.type];
+        slide.className = `slide slide-${s.type}` + (ct ? ` slide-${ct}` : '');
+        slide.dataset.index = slidesData.length;
+
+        let html = '';
+
+        switch (s.type) {
+          case 'title':
+            html = `<div class="title-text">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="subtitle-text">${inlineMd(s.subHeading)}</div>`;
+            break;
+
+          case 'section':
+            html = `<div class="section-text">${inlineMd(s.subHeading || s.heading)}</div>`;
+            break;
+
+          case 'table':
+            if (s.heading) html += `<div class="body-heading">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="body-heading" style="font-size:36px;">${inlineMd(s.subHeading)}</div>`;
+            if (s.hasTable) html += `<div class="table-block">${buildTable(s.tableRows)}</div>`;
+            break;
+
+          case 'mermaid':
+            if (s.heading) html += `<div class="body-heading">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="body-heading" style="font-size:36px;">${inlineMd(s.subHeading)}</div>`;
+            html += s.mermaids.map(code =>
+              `<div class="mermaid-block" data-mermaid-pending="1" data-src="${code.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"></div>`
+            ).join('');
+            break;
+
+          case 'image':
+            if (s.heading) html += `<div class="body-heading">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="body-heading" style="font-size:36px;">${inlineMd(s.subHeading)}</div>`;
+            if (s.bodyLines.length) {
+              html += '<div class="body-content" style="flex:0;">' +
+                s.bodyLines.map(l => l === '__BLANK__' ? '<div class="spacer"></div>' : `<p>${inlineMd(l)}</p>`).join('') +
+                '</div>';
+            }
+            html += s.images.map(img =>
+              `<img src="${img.src}" alt="${img.alt}">` +
+              (img.alt ? `<div class="image-caption">${inlineMd(img.alt)}</div>` : '')
+            ).join('');
+            break;
+
+          case 'list':
+            html += '<ul>';
+            if (s.heading) html += `<li class="list-heading-item">${inlineMd(s.heading)}</li>`;
+            if (s.subHeading) html += `<li class="list-heading-item" style="font-size:36px;">${inlineMd(s.subHeading)}</li>`;
+            if (s.bodyLines.length) {
+              html += s.bodyLines.map(l => l === '__BLANK__' ? '' : `<li class="list-body-item">${inlineMd(l)}</li>`).join('');
+            }
+            html += s.listItems.map(item => `<li>${inlineMd(item)}</li>`).join('') + '</ul>';
+            if (s.hasTable) html += buildTable(s.tableRows);
+            if (s.codeBlocks && s.codeBlocks.length) html += buildCode(s.codeBlocks);
+            if (s.images.length) html += s.images.map(img => `<img src="${img.src}" alt="${img.alt}" style="max-height:400px;margin-top:20px;">`).join('');
+            break;
+
+          case 'code':
+            if (s.heading) html += `<div class="body-heading">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="body-heading" style="font-size:36px;">${inlineMd(s.subHeading)}</div>`;
+            html += '<div class="code-block-wrap">' + buildCode(s.codeBlocks) + '</div>';
+            break;
+
+          default: // body
+            if (s.heading) html += `<div class="body-heading">${inlineMd(s.heading)}</div>`;
+            if (s.subHeading) html += `<div class="body-heading" style="font-size:36px;">${inlineMd(s.subHeading)}</div>`;
+            if (s.bodyLines.length) {
+              html += '<div class="body-content">' +
+                s.bodyLines.map(l => l === '__BLANK__' ? '<div class="spacer"></div>' : `<p>${inlineMd(l)}</p>`).join('') +
+                '</div>';
+            }
+            if (s.hasTable) html += buildTable(s.tableRows);
+            if (s.codeBlocks && s.codeBlocks.length) html += buildCode(s.codeBlocks);
+            if (s.listItems.length) {
+              html += '<ul style="list-style:none;width:100%;margin-top:16px;">' +
+                s.listItems.map(item => `<li style="font-size:28px;color:#333;padding:6px 0;padding-left:28px;position:relative;"><span style="position:absolute;left:0;top:14px;width:8px;height:8px;border-radius:50%;background:#999;"></span>${inlineMd(item)}</li>`).join('') +
+                '</ul>';
+            }
+            if (s.images.length) html += s.images.map(img => `<img src="${img.src}" alt="${img.alt}" style="max-width:100%;max-height:500px;margin-top:20px;">`).join('');
+            break;
+        }
+
+        slide.innerHTML = html;
+        container.appendChild(slide);
+
+        // 썸네일
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb' + (s.type === 'title' ? ' thumb-title' : '');
+        thumb.dataset.index = slidesData.length;
+        const label = s.heading || s.subHeading || (s.bodyLines[0] && s.bodyLines[0] !== '__BLANK__' ? s.bodyLines[0].substring(0, 15) : '') || (s.listItems[0] ? s.listItems[0].substring(0, 15) : '') || `${slidesData.length + 1}`;
+        thumb.textContent = label.replace(/<br>/g, ' ').replace(/<[^>]+>/g, '').substring(0, 12);
+        thumb.addEventListener('click', () => goToSlide(parseInt(thumb.dataset.index)));
+        thumbContainer.appendChild(thumb);
+
+        slidesData.push(s);
+      }
+    }
+
+    totalSlides = slidesData.length;
+    // 페이지 번호 주입 (- N/total -)
+    document.querySelectorAll('#slide-viewport .slide').forEach((slideEl, i) => {
+      const num = document.createElement('div');
+      num.className = 'slide-page-number';
+      num.textContent = `${i + 1}/${totalSlides}`;
+      slideEl.appendChild(num);
+    });
+    if (currentSlide >= totalSlides) currentSlide = Math.max(0, totalSlides - 1);
+    showSlide(currentSlide);
+    window.__deckReady = false; // Puppeteer 대기용 플래그 — 아래 비동기 체인이 완료되면 true
+
+    // 테이블 자동 축소: table-block 영역 초과 시 scale 적용 (기존 스크린 동작 유지)
+    fitAllTables();
+    // 이미지 로드 후 재측정
+    document.querySelectorAll('.slide-table img').forEach(img => {
+      if (img.complete) return;
+      img.addEventListener('load', () => {
+        const slide = img.closest('.slide-table');
+        if (slide) fitTable(slide);
+      });
+      img.addEventListener('error', () => {
+        const slide = img.closest('.slide-table');
+        if (slide) fitTable(slide);
+      });
+    });
+
+    // mermaid + 폰트 + 이미지 decode 완료 후 __deckReady 세팅
+    // window.renderMermaid 는 <script type="module">에서 정의되어 일반 script 보다 늦게 로드되므로 폴링
+    (async () => {
+      try {
+        for (let i = 0; i < 100 && !window.renderMermaid; i++) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+        if (window.renderMermaid) await window.renderMermaid();
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        await Promise.all(Array.from(document.querySelectorAll('img')).map(img =>
+          img.complete ? null : (img.decode ? img.decode().catch(() => null) : null)
+        ));
+        fitAllTables(); // mermaid/이미지 완료 후 재측정 (뷰포트 의존 scale 안정화)
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        window.__deckReady = true;
+      } catch (err) {
+        console.error('[__deckReady chain]', err);
+        window.__deckReady = true; // 실패해도 타임아웃 방지
+      }
+    })();
+  }
+
+  function fitTable(slide) {
+    const block = slide.querySelector('.table-block');
+    const table = block && block.querySelector('table');
+    if (!table) return;
+    const wasActive = slide.classList.contains('active');
+    if (!wasActive) { slide.style.visibility = 'hidden'; slide.style.display = 'flex'; }
+    table.style.transform = '';
+    const bW = block.clientWidth;
+    const bH = block.clientHeight;
+    const tW = table.scrollWidth;
+    const tH = table.scrollHeight;
+    if (tW > bW || tH > bH) {
+      const scale = Math.min(bW / tW, bH / tH) * 0.96;
+      table.style.transformOrigin = 'center center';
+      table.style.transform = `scale(${scale})`;
+    }
+    if (!wasActive) { slide.style.display = ''; slide.style.visibility = ''; }
+  }
+
+  function fitAllTables() {
+    document.querySelectorAll('.slide-table').forEach(fitTable);
+  }
+
+  function showSlide(index) {
+    if (totalSlides === 0) return;
+    currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+
+    document.querySelectorAll('.slide').forEach((s, i) => {
+      s.classList.toggle('active', i === currentSlide);
+    });
+    document.querySelectorAll('.thumb').forEach((t, i) => {
+      t.classList.toggle('active', i === currentSlide);
+      if (i === currentSlide) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
+
+    document.getElementById('pageInfo').textContent = `${currentSlide + 1} / ${totalSlides}`;
+    history.replaceState(null, '', `#${currentSlide + 1}`);
+  }
+
+  function goToSlide(index) { showSlide(index); }
+  function nextSlide() { showSlide(currentSlide + 1); }
+  function prevSlide() { showSlide(currentSlide - 1); }
+
+  // 네비게이션
+  document.getElementById('prevBtn').addEventListener('click', prevSlide);
+  document.getElementById('nextBtn').addEventListener('click', nextSlide);
+  document.getElementById('navLeft').addEventListener('click', prevSlide);
+  document.getElementById('navRight').addEventListener('click', nextSlide);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); goToSlide(0); }
+    if (e.key === 'End') { e.preventDefault(); goToSlide(totalSlides - 1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        document.body.classList.add('fullscreen-mode');
+      } else {
+        document.exitFullscreen();
+        document.body.classList.remove('fullscreen-mode');
+      }
+    }
+    if (e.key === 'Escape') {
+      document.body.classList.remove('fullscreen-mode');
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      document.body.classList.remove('fullscreen-mode');
+    }
+  });
+
+  // 전체화면 버튼
+  document.getElementById('fullscreenBtn').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      document.body.classList.add('fullscreen-mode');
+    } else {
+      document.exitFullscreen();
+      document.body.classList.remove('fullscreen-mode');
+    }
+  });
+
+  // 서버사이드 Puppeteer PDF (savePdfBtn2)
+  document.getElementById('savePdfBtn2').addEventListener('click', async () => {
+    const btn2 = document.getElementById('savePdfBtn2');
+    btn2.disabled = true;
+    const tStart = performance.now();
+    const tick = () => {
+      const s = ((performance.now() - tStart) / 1000).toFixed(0);
+      if (btn2.disabled) btn2.textContent = `PDF 생성 중... ${s}s`;
+    };
+    tick();
+    const ticker = setInterval(tick, 500);
+    window.__pdfGenerating = true;
+    try {
+      const resp = await fetch(`/${deckUrl}/pdf`);
+      if (!resp.ok) {
+        const msg = await resp.text();
+        alert(`PDF 생성 실패: ${msg}`);
+        return;
+      }
+      const blob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${deckName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      btn2.textContent = 'PDF 저장 완료!';
+    } catch (err) {
+      alert(`PDF 생성 실패: ${err.message}`);
+      btn2.textContent = 'PDF 저장';
+    } finally {
+      clearInterval(ticker);
+      const elapsed = ((performance.now() - tStart) / 1000).toFixed(1);
+      console.log(`[PDF (서버)] 경과=${elapsed}s`);
+      window.__pdfGenerating = false;
+      // 버퍼된 SSE 이벤트 flush (최신 1개만 적용)
+      if (window.__sseBuffer && window.__sseBuffer.length && window.__flushSse) {
+        window.__flushSse();
+      }
+      setTimeout(() => { btn2.textContent = 'PDF 저장'; btn2.disabled = false; }, 2000);
+    }
+  });
+
+
+  // 초기 로드: deck 경로 = pathname 에서 마지막 ".html" 세그먼트 제거한 것
+  const deckUrl = location.pathname.replace(/\/[^\/]+\.html$/, '').replace(/^\/+/, '');
+  const deckName = decodeURIComponent(deckUrl.split('/').pop() || '');
+  fetch(`/${deckUrl}/files`)
+    .then(r => r.json())
+    .then(data => renderSlides(data));
+
+  // SSE 실시간 동기화
+  const evtSource = new EventSource(`/${deckUrl}/events`);
+  // 서버 PDF 생성 중 DOM 변경이 들어오면 Puppeteer 캡처와 경합하므로 버퍼링
+  window.__sseBuffer = [];
+  window.__flushSse = () => {
+    if (!window.__sseBuffer.length) return;
+    const last = window.__sseBuffer[window.__sseBuffer.length - 1];
+    window.__sseBuffer = [];
+    handleSseMessage(last);
+  };
+  const handleSseMessage = (e) => {
+    const d = JSON.parse(e.data);
+    if (d === 'style-reload') {
+      // style.md 변경 → CSS 리로드
+      const link = document.querySelector('link[href="/style.css"]');
+      if (link) link.href = '/style.css?t=' + Date.now();
+      // CSS 반영 후 테이블 재측정
+      setTimeout(() => fitAllTables(), 200);
+      return;
+    }
+    fetch(`/${deckUrl}/files`).then(r => r.json()).then(data => {
+      const oldTexts = slidesData.map(s => JSON.stringify(s));
+      renderSlides(data);
+      const newTexts = slidesData.map(s => JSON.stringify(s));
+      console.log('[SSE]', { oldLen: oldTexts.length, newLen: newTexts.length });
+      let jumpedTo = -1;
+      if (newTexts.length > oldTexts.length) {
+        jumpedTo = newTexts.length - 1;
+      } else {
+        for (let i = 0; i < newTexts.length; i++) {
+          if (oldTexts[i] !== newTexts[i]) { jumpedTo = i; break; }
+        }
+      }
+      console.log('[SSE] jumpTo', jumpedTo);
+      if (jumpedTo >= 0) goToSlide(jumpedTo);
+    });
+  };
+  evtSource.onmessage = (e) => {
+    if (window.__pdfGenerating) {
+      window.__sseBuffer.push(e);
+      return;
+    }
+    handleSseMessage(e);
+  };
+</script>
+
+</body>
+</html>
