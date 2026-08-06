@@ -1,1 +1,11 @@
-{}
+{
+  "userIgnoreFilters": [
+    ".gitignore",
+    ".git",
+    ".omc",
+    "app",
+    "CLAUDE.md",
+    "start.bat",
+    "note"
+  ]
+}
